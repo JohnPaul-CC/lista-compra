@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de la Compra</title>
+    <!-- Tailwind CSS para diseño instantáneo -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Ocultar flechas en los inputs numéricos (opcional, para una vista más limpia) */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 flex flex-col items-center">
+
+    <main class="w-full max-w-md bg-white rounded-2xl shadow-xl p-6 flex flex-col h-[90vh]">
+        <div class="flex justify-between items-center mb-4">
+            <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                🛒 Mi Lista
+            </h1>
+            <button onclick="limpiarLista()" class="text-sm text-red-500 hover:text-red-700 font-medium">
+                Borrar selección
+            </button>
+        </div>
+
+        <!-- Contenedor con scroll para los productos -->
+        <div id="lista-productos" class="flex-1 overflow-y-auto space-y-3 pr-1 pb-4">
+            <!-- Los productos se inyectan dinámicamente aquí -->
+        </div>
+
+        <!-- Botón de acción al final -->
+        <div class="pt-4 border-t border-gray-100 mt-auto">
+            <button onclick="copiarAlPortapapeles()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-xl shadow-lg transition-all active:scale-[0.98] flex justify-center items-center gap-2">
+                📋 Copiar para compartir
+            </button>
+        </div>
+    </main>
+
+    <script>
+        // --- 1. TU LISTA DE PRODUCTOS ---
+        // Modifica esto con los productos que sueles tener en tu despensa
+        const productosBase = [
+            "Leche", "Huevos", "Café", "Pechuga de pollo", "Arroz", 
+            "Pasta", "Tomate frito", "Plátanos", "Manzanas", "Pan",
+            "Aceite de oliva", "Cebollas", "Ajos", "Papel higiénico",
+            "Jabón de ropa", "Yogures", "Queso"
+        ];
+
+        // --- 2. LÓGICA DE ESTADO ---
+        // Lee el estado guardado en el móvil o inicializa uno nuevo
+        let estado = JSON.parse(localStorage.getItem('lista_compra_estado')) || 
+            productosBase.map((p, i) => ({ id: i, nombre: p, check: false, cantidad: "" }));
+
+        const contenedor = document.getElementById('lista-productos');
+
+        function guardarYRenderizar() {
+            localStorage.setItem('lista_compra_estado', JSON.stringify(estado));
+            renderizar();
+        }
+
+        // --- 3. RENDERIZADO DE LA INTERFAZ ---
+        function renderizar() {
+            contenedor.innerHTML = estado.map(prod => `
+                <div class="flex items-center justify-between p-3 rounded-xl border transition-all ${prod.check ? 'border-blue-500 bg-blue-50/50' : 'border-gray-200 bg-gray-50'}">
+                    
+                    <!-- Checkbox custom (toda el área del nombre es clickeable) -->
+                    <label class="flex items-center gap-3 flex-1 cursor-pointer select-none py-1">
+                        <input type="checkbox" ${prod.check ? 'checked' : ''} 
+                               onchange="toggleCheck(${prod.id})" 
+                               class="w-6 h-6 text-blue-600 border-gray-300 rounded focus:ring-blue-500 transition-colors">
+                        <span class="text-lg font-medium ${prod.check ? 'text-blue-900' : 'text-gray-700'}">${prod.nombre}</span>
+                    </label>
+                    
+                    <!-- Input Numérico expuesto al lado derecho -->
+                    <div class="flex items-center ml-2">
+                        <input type="number" 
+                               inputmode="numeric"
+                               placeholder="Cant." 
+                               value="${prod.cantidad}" 
+                               oninput="cambiarCantidad(${prod.id}, this.value)"
+                               class="w-16 p-2 text-center text-lg bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm ${prod.check ? 'opacity-100' : 'opacity-50'}">
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // --- 4. ACCIONES DE USUARIO ---
+        function toggleCheck(id) {
+            const prod = estado.find(p => p.id === id);
+            prod.check = !prod.check;
+            
+            // Si el check se marca, hacemos focus automáticamente en el input de cantidad (opcional)
+            // Si no quieres este comportamiento, borra estas 4 líneas siguientes
+            if(prod.check) {
+                setTimeout(() => {
+                   const input = contenedor.children[id].querySelector('input[type="number"]');
+                   if(input) input.focus();
+                }, 50);
+            }
+
+            guardarYRenderizar();
+        }
+
+        function cambiarCantidad(id, valor) {
+            const prod = estado.find(p => p.id === id);
+            prod.cantidad = valor;
+            
+            // Si escribe una cantidad, marcamos automáticamente el check por comodidad
+            if (valor !== "" && !prod.check) {
+                prod.check = true;
+                guardarYRenderizar(); // Re-renderiza para actualizar el color visual
+            } else {
+                // Si solo cambia el número, guardamos sin re-renderizar para no perder el foco del teclado
+                localStorage.setItem('lista_compra_estado', JSON.stringify(estado)); 
+            }
+        }
+
+        function limpiarLista() {
+            if(confirm("¿Seguro que quieres desmarcar todo?")) {
+                estado.forEach(p => {
+                    p.check = false;
+                    p.cantidad = "";
+                });
+                guardarYRenderizar();
+            }
+        }
+
+        // --- 5. EXPORTAR AL PORTAPAPELES ---
+        function copiarAlPortapapeles() {
+            const seleccionados = estado.filter(p => p.check);
+            
+            if (seleccionados.length === 0) {
+                alert("No has marcado nada para comprar aún.");
+                return;
+            }
+
+            // Genera el texto limpio
+            const textoFormateado = seleccionados
+                .map(p => `• ${p.nombre}${p.cantidad ? ` (x${p.cantidad})` : ''}`)
+                .join('\n');
+
+            // Usa la API del portapapeles
+            navigator.clipboard.writeText(textoFormateado)
+                .then(() => {
+                    // Feedback visual usando un simple alert
+                    alert("✅ Lista copiada:\n\n" + textoFormateado);
+                })
+                .catch(err => {
+                    alert("Error al copiar. Intenta de nuevo.");
+                    console.error("Error: ", err);
+                });
+        }
+
+        // --- 6. INICIO ---
+        renderizar();
+    </script>
+</body>
+</html>
