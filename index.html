@@ -144,7 +144,7 @@
 
             // Genera el texto limpio
             const textoFormateado = seleccionados
-                .map(p => `• ${p.nombre}${p.cantidad ? ` (x${p.cantidad})` : ''}`)
+                .map(p => `• ${p.nombre}${p.cantidad ? ` (quedan ${p.cantidad})` : ''}`)
                 .join('\n');
 
             // Usa la API del portapapeles
