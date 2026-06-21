@@ -48,10 +48,9 @@
     <script>
         // --- 1. TU LISTA DE PRODUCTOS ---
         const productosBase = [
-            "Leche", "Huevos", "Café", "Pechuga de pollo", "Arroz", 
-            "Pasta", "Tomate frito", "Plátanos", "Manzanas", "Pan",
-            "Aceite de oliva", "Cebollas", "Ajos", "Papel higiénico",
-            "Jabón de ropa", "Yogures", "Queso"
+            "Lechuga", "Pepino", "Zanahoria", "Cebolla", "Tomate cherry", 
+            "Tomate pera", "Pimiento de Padron", "Champiñones", "Manzana", "Mango", "Ajo",
+            "Perejil"
         ];
 
         // --- 2. LÓGICA DE ESTADO ---
@@ -159,7 +158,7 @@
             }
 
             const textoFormateado = seleccionados
-                .map(p => `• ${p.nombre}${p.cantidad ? ` (x${p.cantidad})` : ''}`)
+                .map(p => `• ${p.nombre}${p.cantidad ? ` (quedan ${p.cantidad})` : ''}`)
                 .join('\n');
 
             navigator.clipboard.writeText(textoFormateado)
