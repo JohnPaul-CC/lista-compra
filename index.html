@@ -3,19 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Lista</title>
+    <title>Mi Despensa</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Ocultar flechas en los inputs numéricos para un diseño más limpio */
         input[type="number"]::-webkit-outer-spin-button,
-        input[type="number"]::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-        input[type="number"] {
-            -moz-appearance: textfield;
-            appearance: textfield;
-        }
+        input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen p-4 flex flex-col items-center relative overflow-hidden">
@@ -23,62 +16,178 @@
     <main class="w-full max-w-md bg-white rounded-2xl shadow-xl p-6 flex flex-col h-[90vh] z-10">
         <div class="flex justify-between items-center mb-4">
             <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                🛒 Mi Lista
+                🍳 Revisión Cocina
             </h1>
             <button onclick="limpiarLista()" class="text-sm text-red-500 hover:text-red-700 font-medium px-2 py-1">
                 Borrar selección
             </button>
         </div>
 
-        <div id="lista-productos" class="flex-1 overflow-y-auto space-y-3 pr-1 pb-4">
-            </div>
+        <div id="lista-productos" class="flex-1 overflow-y-auto space-y-2.5 pr-1 pb-4"></div>
 
         <div class="pt-4 border-t border-gray-100 mt-auto">
             <button onclick="copiarAlPortapapeles()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-xl shadow-lg transition-all active:scale-[0.98] flex justify-center items-center gap-2">
-                📋 Copiar para compartir
+                📋 Generar Lista por Pasillos
             </button>
         </div>
     </main>
 
     <div id="toast" class="fixed bottom-24 sm:bottom-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-xl shadow-2xl font-medium flex items-center gap-2 opacity-0 pointer-events-none transition-all duration-300 transform translate-y-4 z-50 whitespace-nowrap">
-        <span id="toast-icon" class="text-lg">✅</span>
+        <span id="toast-icon">✅</span>
         <span id="toast-message">¡Lista copiada!</span>
     </div>
 
     <script>
-        // --- 1. TU LISTA DE PRODUCTOS ---
-        const productosBase = [
-    "Aceite oliva", "Aceite girasol", "Lechuga", "Pepino", "Manzana", 
-    "Mango", "Ajo", "Perejil", "Pimiento de Padrón", "Tomate cherry", 
-    "Tomate pera", "Champiñones", "Zanahorias enteras", "Puerro", "Pimiento", 
-    "Limón", "Patata", "Cebolla", "Huevos", "Harina", 
-    "Vinagre balsámico", "Laurel", "Cayena", "Pimentón dulce", "Sal marina", 
-    "Sazonador paella", "Sirope de caña", "Miel de flores", "Nata cocinar", "Salsa teriyaki", 
-    "Atún", "Papel film", "Papel aluminio", "Tomate frito", "Aceitunas", 
-    "Variantes ensaladilla", "Espárragos", "Zanahoria tiras", "Mermelada", "Salsa Cesar", 
-    "Salsa Yogurt", "Mayonesa", "Ketchup", "Avecrem", "Arroz redondo", 
-    "Pasta", "Sal fina", "Azúcar", "Rosquillas", "Pan hamburguesa", 
-    "Tostadas Camembert", "Tostadas Salmorejo", "Pipas calabaza", "Pipas girasol", "Nueces", 
-    "Frutas deshidratadas", "Almendras", "Galleta Lotus", "Galleta María", "Galleta molida", 
-    "Caramelo líquido", "Chocolate líquido", "Grissini(palos jamón)", "Canela", "Natillas", 
-    "Mousse de chocolate", "Flan huevo", "Flan café", "Nata montada", "Rulo de cabra", 
-    "Quesos ...", "Queso Burrata", "Queso Camembert", "Queso rallado", "Salsa trufa", 
-    "Alioli", "Jamón serrano", "Jamón York", "Bacon cheapsbacon", "Bacon hamburguesa", 
-    "Chorizo", "Jamón ibérico", "Fua", "Entrecot", "Presa ibérica", 
-    "Pechuga", "Helado Vainilla", "Helado leche", "Helado chocolate", "Helado turrón", 
-    "Helado limón", "Tarta de whisky", "Contessa", "Bolas de chocolate", "Barras de chocolate", 
-    "Pan sin gluten", "Sardina ahumada", "Boquerón ahumado", "Chopitos plancha", "Lubina", 
-    "Dorada", "Almejas", "Mejillones", "Croquetas jamón", "Chuletillas", 
-    "Alcachofas", "Mejillones paella", "Bolsa de basura", "Mistol", "Limpia critales", 
-    "Aclarador vasos", "Friegasuelos"
-];
+// --- 1. CONFIGURACIÓN MAESTRA ---
 
-        // --- 2. LÓGICA DE ESTADO ---
-        let estado = JSON.parse(localStorage.getItem('lista_compra_estado')) || 
-            productosBase.map((p, i) => ({ id: i, nombre: p, check: false, cantidad: "" }));
+        // A. El orden en el que tú recorres físicamente el Supermercado
+        const ordenPasillos = [
+            "🥦 Frutas y Verduras",
+            "🥩 Carnes y Aves",
+            "🐟 Pescadería y Ahumados",
+            "🥓 Charcutería y Quesos",
+            "🥛 Lácteos y Postres Fríos",
+            "🥫 Salsas, Conservas y Especias",
+            "🌾 Despensa y Panadería",
+            "🧊 Congelados",
+            "🧹 Limpieza y Hogar",
+            "📦 Otros"
+        ];
+
+        // B. Tus productos ordenados estrictamente por el recorrido de tu COCINA (Derecha -> Izquierda)
+        const productosBase = [
+            { nombre: "Aceite oliva", seccion: "🌾 Despensa y Panadería" },
+            { nombre: "Aceite girasol", seccion: "🌾 Despensa y Panadería" },
+            { nombre: "Lechuga", seccion: "🥦 Frutas y Verduras" },
+            { nombre: "Pepino", seccion: "🥦 Frutas y Verduras" },
+            { nombre: "Manzana", seccion: "🥦 Frutas y Verduras" },
+            { nombre: "Mango", seccion: "🥦 Frutas y Verduras" },
+            { nombre: "Ajo", seccion: "🥦 Frutas y Verduras" },
+            { nombre: "Perejil", seccion: "🥦 Frutas y Verduras" },
+            { nombre: "Pimiento de Padrón", seccion: "🥦 Frutas y Verduras" },
+            { nombre: "Tomate cherry", seccion: "🥦 Frutas y Verduras" },
+            { nombre: "Tomate pera", seccion: "🥦 Frutas y Verduras" },
+            { nombre: "Champiñones", seccion: "🥦 Frutas y Verduras" },
+            { nombre: "Zanahorias enteras", seccion: "🥦 Frutas y Verduras" },
+            { nombre: "Puerro", seccion: "🥦 Frutas y Verduras" },
+            { nombre: "Pimiento", seccion: "🥦 Frutas y Verduras" },
+            { nombre: "Limón", seccion: "🥦 Frutas y Verduras" },
+            { nombre: "Patata", seccion: "🥦 Frutas y Verduras" },
+            { nombre: "Cebolla", seccion: "🥦 Frutas y Verduras" },
+            { nombre: "Huevos", seccion: "🥛 Lácteos y Postres Fríos" },
+            { nombre: "Harina", seccion: "🌾 Despensa y Panadería" },
+            { nombre: "Vinagre balsámico", seccion: "🥫 Salsas, Conservas y Especias" },
+            { nombre: "Laurel", seccion: "🥫 Salsas, Conservas y Especias" },
+            { nombre: "Cayena", seccion: "🥫 Salsas, Conservas y Especias" },
+            { nombre: "Pimentón dulce", seccion: "🥫 Salsas, Conservas y Especias" },
+            { nombre: "Sal marina", seccion: "🥫 Salsas, Conservas y Especias" },
+            { nombre: "Sazonador paella", seccion: "🥫 Salsas, Conservas y Especias" },
+            { nombre: "Sirope de caña", seccion: "🌾 Despensa y Panadería" },
+            { nombre: "Miel de flores", seccion: "🌾 Despensa y Panadería" },
+            { nombre: "Nata cocinar", seccion: "🥛 Lácteos y Postres Fríos" },
+            { nombre: "Salsa teriyaki", seccion: "🥫 Salsas, Conservas y Especias" },
+            { nombre: "Atún", seccion: "🥫 Salsas, Conservas y Especias" },
+            { nombre: "Papel film", seccion: "🧹 Limpieza y Hogar" },
+            { nombre: "Papel aluminio", seccion: "🧹 Limpieza y Hogar" },
+            { nombre: "Tomate frito", seccion: "🥫 Salsas, Conservas y Especias" },
+            { nombre: "Aceitunas", seccion: "🥫 Salsas, Conservas y Especias" },
+            { nombre: "Variantes ensaladilla", seccion: "🥫 Salsas, Conservas y Especias" },
+            { nombre: "Espárragos", seccion: "🥫 Salsas, Conservas y Especias" },
+            { nombre: "Zanahoria tiras", seccion: "🥫 Salsas, Conservas y Especias" },
+            { nombre: "Mermelada", seccion: "🌾 Despensa y Panadería" },
+            { nombre: "Salsa Cesar", seccion: "🥫 Salsas, Conservas y Especias" },
+            { nombre: "Salsa Yogurt", seccion: "🥫 Salsas, Conservas y Especias" },
+            { nombre: "Mayonesa", seccion: "🥫 Salsas, Conservas y Especias" },
+            { nombre: "Ketchup", seccion: "🥫 Salsas, Conservas y Especias" },
+            { nombre: "Avecrem", seccion: "🥫 Salsas, Conservas y Especias" },
+            { nombre: "Arroz redondo", seccion: "🌾 Despensa y Panadería" },
+            { nombre: "Pasta", seccion: "🌾 Despensa y Panadería" },
+            { nombre: "Sal fina", seccion: "🥫 Salsas, Conservas y Especias" },
+            { nombre: "Azúcar", seccion: "🌾 Despensa y Panadería" },
+            { nombre: "Rosquillas", seccion: "🌾 Despensa y Panadería" },
+            { nombre: "Pan hamburguesa", seccion: "🌾 Despensa y Panadería" },
+            { nombre: "Tostadas Camembert", seccion: "🌾 Despensa y Panadería" },
+            { nombre: "Tostadas Salmorejo", seccion: "🌾 Despensa y Panadería" },
+            { nombre: "Pipas calabaza", seccion: "🌾 Despensa y Panadería" },
+            { nombre: "Pipas girasol", seccion: "🌾 Despensa y Panadería" },
+            { nombre: "Nueces", seccion: "🌾 Despensa y Panadería" },
+            { nombre: "Frutas deshidratadas", seccion: "🌾 Despensa y Panadería" },
+            { nombre: "Almendras", seccion: "🌾 Despensa y Panadería" },
+            { nombre: "Galleta Lotus", seccion: "🌾 Despensa y Panadería" },
+            { nombre: "Galleta María", seccion: "🌾 Despensa y Panadería" },
+            { nombre: "Galleta molida", seccion: "🌾 Despensa y Panadería" },
+            { nombre: "Caramelo líquido", seccion: "🌾 Despensa y Panadería" },
+            { nombre: "Chocolate líquido", seccion: "🌾 Despensa y Panadería" },
+            { nombre: "Grissini(palos jamón)", seccion: "🌾 Despensa y Panadería" },
+            { nombre: "Canela", seccion: "🥫 Salsas, Conservas y Especias" },
+            { nombre: "Natillas", seccion: "🥛 Lácteos y Postres Fríos" },
+            { nombre: "Mousse de chocolate", seccion: "🥛 Lácteos y Postres Fríos" },
+            { nombre: "Flan huevo", seccion: "🥛 Lácteos y Postres Fríos" },
+            { nombre: "Flan café", seccion: "🥛 Lácteos y Postres Fríos" },
+            { nombre: "Nata montada", seccion: "🥛 Lácteos y Postres Fríos" },
+            { nombre: "Rulo de cabra", seccion: "🥓 Charcutería y Quesos" },
+            { nombre: "Quesos ...", seccion: "🥓 Charcutería y Quesos" },
+            { nombre: "Queso Burrata", seccion: "🥓 Charcutería y Quesos" },
+            { nombre: "Queso Camembert", seccion: "🥓 Charcutería y Quesos" },
+            { nombre: "Queso rallado", seccion: "🥓 Charcutería y Quesos" },
+            { nombre: "Salsa trufa", seccion: "🥫 Salsas, Conservas y Especias" },
+            { nombre: "Alioli", seccion: "🥫 Salsas, Conservas y Especias" },
+            { nombre: "Jamón serrano", seccion: "🥓 Charcutería y Quesos" },
+            { nombre: "Jamón York", seccion: "🥓 Charcutería y Quesos" },
+            { nombre: "Bacon cheapsbacon", seccion: "🥓 Charcutería y Quesos" },
+            { nombre: "Bacon hamburguesa", seccion: "🥓 Charcutería y Quesos" },
+            { nombre: "Chorizo", seccion: "🥓 Charcutería y Quesos" },
+            { nombre: "Jamón ibérico", seccion: "🥓 Charcutería y Quesos" },
+            { nombre: "Fua", seccion: "🥓 Charcutería y Quesos" },
+            { nombre: "Entrecot", seccion: "🥩 Carnes y Aves" },
+            { nombre: "Presa ibérica", seccion: "🥩 Carnes y Aves" },
+            { nombre: "Pechuga", seccion: "🥩 Carnes y Aves" },
+            { nombre: "Helado Vainilla", seccion: "🧊 Congelados" },
+            { nombre: "Helado leche", seccion: "🧊 Congelados" },
+            { nombre: "Helado chocolate", seccion: "🧊 Congelados" },
+            { nombre: "Helado turrón", seccion: "🧊 Congelados" },
+            { nombre: "Helado limón", seccion: "🧊 Congelados" },
+            { nombre: "Tarta de whisky", seccion: "🧊 Congelados" },
+            { nombre: "Contessa", seccion: "🧊 Congelados" },
+            { nombre: "Bolas de chocolate", seccion: "🧊 Congelados" },
+            { nombre: "Barras de chocolate", seccion: "🧊 Congelados" },
+            { nombre: "Pan sin gluten", seccion: "🌾 Despensa y Panadería" },
+            { nombre: "Sardina ahumada", seccion: "🐟 Pescadería y Ahumados" },
+            { nombre: "Boquerón ahumado", seccion: "🐟 Pescadería y Ahumados" },
+            { nombre: "Chopitos plancha", seccion: "🐟 Pescadería y Ahumados" },
+            { nombre: "Lubina", seccion: "🐟 Pescadería y Ahumados" },
+            { nombre: "Dorada", seccion: "🐟 Pescadería y Ahumados" },
+            { nombre: "Almejas", seccion: "🐟 Pescadería y Ahumados" },
+            { nombre: "Mejillones", seccion: "🐟 Pescadería y Ahumados" },
+            { nombre: "Croquetas jamón", seccion: "🧊 Congelados" },
+            { nombre: "Chuletillas", seccion: "🥩 Carnes y Aves" },
+            { nombre: "Alcachofas", seccion: "🥦 Frutas y Verduras" },
+            { nombre: "Mejillones paella", seccion: "🧊 Congelados" },
+            { nombre: "Bolsa de basura", seccion: "🧹 Limpieza y Hogar" },
+            { nombre: "Mistol", seccion: "🧹 Limpieza y Hogar" },
+            { nombre: "Limpia critales", seccion: "🧹 Limpieza y Hogar" },
+            { nombre: "Aclarador vasos", seccion: "🧹 Limpieza y Hogar" },
+            { nombre: "Friegasuelos", seccion: "🧹 Limpieza y Hogar" }
+        ];
+        
+        // --- 2. LÓGICA DE ESTADO (Con fusión inteligente) ---
+        // Leemos lo que haya en LocalStorage, pero inyectamos la "sección" fresca de la base de datos
+        // por si en el futuro cambias un producto de pasillo en el código.
+        const estadoGuardado = JSON.parse(localStorage.getItem('lista_compra_estado')) || [];
+
+        let estado = productosBase.map((base, index) => {
+            const itemGuardado = estadoGuardado.find(g => g.nombre === base.nombre);
+            return {
+                id: index,
+                nombre: base.nombre,
+                seccion: base.seccion || "📦 Otros",
+                check: itemGuardado ? itemGuardado.check : false,
+                cantidad: itemGuardado ? itemGuardado.cantidad : ""
+            };
+        });
 
         const contenedor = document.getElementById('lista-productos');
-        let toastTimeout; // Variable para controlar el tiempo del Toast
+        let toastTimeout;
 
         function guardarYRenderizar() {
             localStorage.setItem('lista_compra_estado', JSON.stringify(estado));
@@ -88,45 +197,40 @@
         // --- 3. RENDERIZADO DE LA INTERFAZ ---
         function renderizar() {
             contenedor.innerHTML = estado.map(prod => `
-                <div class="flex items-center justify-between p-3 rounded-xl border transition-all ${prod.check ? 'border-blue-500 bg-blue-50/50' : 'border-gray-200 bg-gray-50'}">
+                <div class="flex items-center justify-between p-2.5 rounded-xl border transition-all ${prod.check ? 'border-blue-500 bg-blue-50/50' : 'border-gray-200 bg-gray-50'}">
                     
-                    <label class="flex items-center gap-3 flex-1 cursor-pointer select-none py-1">
+                    <label class="flex items-center gap-3 flex-1 cursor-pointer select-none py-1 overflow-hidden">
                         <input type="checkbox" ${prod.check ? 'checked' : ''} 
                                onchange="toggleCheck(${prod.id})" 
-                               class="w-6 h-6 text-blue-600 border-gray-300 rounded focus:ring-blue-500 transition-colors">
-                        <span class="text-lg font-medium ${prod.check ? 'text-blue-900' : 'text-gray-700'}">${prod.nombre}</span>
+                               class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 shrink-0">
+                        <div class="flex flex-col min-w-0">
+                            <span class="text-base font-medium truncate ${prod.check ? 'text-blue-900 font-semibold' : 'text-gray-700'}">${prod.nombre}</span>
+                            <span class="text-[11px] text-gray-400 font-normal tracking-wide">${prod.seccion.replace(/ \(.+\)/,'')}</span>
+                        </div>
                     </label>
                     
-                    <div class="flex items-center ml-2">
+                    <div class="flex items-center ml-2 shrink-0">
                         <input type="number" 
                                inputmode="numeric"
                                placeholder="Cant." 
                                value="${prod.cantidad}" 
                                oninput="cambiarCantidad(${prod.id}, this.value)"
-                               class="w-16 p-2 text-center text-lg bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm ${prod.check ? 'opacity-100' : 'opacity-50'} transition-opacity">
+                               class="w-16 p-1.5 text-center text-base bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm ${prod.check ? 'opacity-100 font-bold text-blue-900' : 'opacity-40'} transition-all">
                     </div>
                 </div>
             `).join('');
         }
 
-        // --- 4. ACCIONES DE USUARIO ---
+        // --- 4. ACCIONES ---
         function toggleCheck(id) {
             const prod = estado.find(p => p.id === id);
             prod.check = !prod.check;
-            
-            if(prod.check) {
-                setTimeout(() => {
-                   const input = contenedor.children[id].querySelector('input[type="number"]');
-                   if(input) input.focus();
-                }, 50);
-            }
             guardarYRenderizar();
         }
 
         function cambiarCantidad(id, valor) {
             const prod = estado.find(p => p.id === id);
             prod.cantidad = valor;
-            
             if (valor !== "" && !prod.check) {
                 prod.check = true;
                 guardarYRenderizar(); 
@@ -136,62 +240,72 @@
         }
 
         function limpiarLista() {
-            // Aquí seguimos usando confirm() porque requiere interacción (Aceptar/Cancelar),
-            // pero el resultado visual lo damos con el Toast
-            if(confirm("¿Seguro que quieres desmarcar todo?")) {
-                estado.forEach(p => {
-                    p.check = false;
-                    p.cantidad = "";
-                });
+            if(confirm("¿Limpiar toda la cocina para una nueva compra?")) {
+                estado.forEach(p => { p.check = false; p.cantidad = ""; });
                 guardarYRenderizar();
-                mostrarToast("Lista reiniciada", "🧹");
+                mostrarToast("Cocina reseteada", "🧹");
             }
         }
 
-        // --- 5. LÓGICA DEL TOAST ---
         function mostrarToast(mensaje, icono = "✅") {
             const toast = document.getElementById('toast');
             document.getElementById('toast-message').innerText = mensaje;
             document.getElementById('toast-icon').innerText = icono;
-            
-            // Si hay un toast ejecutándose, limpiamos el temporizador para que no se oculte antes de tiempo
             clearTimeout(toastTimeout);
-            
-            // Animación de entrada
             toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-4');
             toast.classList.add('opacity-100', 'translate-y-0');
-            
-            // Animación de salida a los 2.5 segundos
             toastTimeout = setTimeout(() => {
                 toast.classList.remove('opacity-100', 'translate-y-0');
                 toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-4');
             }, 2500);
         }
 
-        // --- 6. EXPORTAR AL PORTAPAPELES ---
+        // --- 5. EL ALGORITMO DE AGRUPACIÓN (Portapapeles) ---
         function copiarAlPortapapeles() {
             const seleccionados = estado.filter(p => p.check);
             
             if (seleccionados.length === 0) {
-                mostrarToast("No has marcado nada", "⚠️");
+                mostrarToast("No has marcado ningún producto", "⚠️");
                 return;
             }
 
-            const textoFormateado = seleccionados
-                .map(p => `• ${p.nombre}${p.cantidad ? ` (quedan ${p.cantidad})` : ''}`)
-                .join('\n');
+            // 1. Agrupamos los seleccionados por su sección
+            const grupos = {};
+            seleccionados.forEach(prod => {
+                if (!grupos[prod.seccion]) grupos[prod.seccion] = [];
+                grupos[prod.seccion].push(prod);
+            });
 
-            navigator.clipboard.writeText(textoFormateado)
-                .then(() => {
-                    mostrarToast("¡Lista copiada!", "📋");
-                })
-                .catch(err => {
-                    mostrarToast("Error al copiar", "❌");
-                    console.error("Error: ", err);
+            // 2. Ordenamos las llaves de los grupos basándonos en nuestro array 'ordenPasillos'
+            const seccionesOrdenadas = Object.keys(grupos).sort((a, b) => {
+                let indexA = ordenPasillos.indexOf(a);
+                let indexB = ordenPasillos.indexOf(b);
+                // Si metiste un producto con una sección mal escrita que no existe en el array maestro, lo tira al fondo
+                if(indexA === -1) indexA = 999; 
+                if(indexB === -1) indexB = 999;
+                return indexA - indexB;
+            });
+
+            // 3. Construimos el texto formateado en Markdown para WhatsApp/Telegram
+            let lineas = [];
+            
+            seccionesOrdenadas.forEach(seccion => {
+                lineas.push(`\n*${seccion.toUpperCase()}*`); // Negrita en WhatsApp
+                
+                grupos[seccion].forEach(p => {
+                    const cant = p.cantidad ? ` (x${p.cantidad})` : '';
+                    lineas.push(` • ${p.nombre}${cant}`);
                 });
+            });
+
+            const textoFinal = lineas.join('\n').trim();
+
+            navigator.clipboard.writeText(textoFinal)
+                .then(() => mostrarToast("¡Lista ordenada por pasillos!", "🛒"))
+                .catch(err => mostrarToast("Error al copiar", "❌"));
         }
 
-        // --- 7. INICIO ---
+        // Inicio
         renderizar();
     </script>
 </body>
