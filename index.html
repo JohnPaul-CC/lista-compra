@@ -16,7 +16,7 @@
     <main class="w-full max-w-md bg-white rounded-2xl shadow-xl p-6 flex flex-col h-[90vh] z-10">
         <div class="flex justify-between items-center mb-4">
             <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                🍳 Revisión Cocina
+                Lista de compra
             </h1>
             <button onclick="limpiarLista()" class="text-sm text-red-500 hover:text-red-700 font-medium px-2 py-1">
                 Borrar selección
@@ -27,7 +27,7 @@
 
         <div class="pt-4 border-t border-gray-100 mt-auto">
             <button onclick="copiarAlPortapapeles()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-xl shadow-lg transition-all active:scale-[0.98] flex justify-center items-center gap-2">
-                📋 Generar Lista por Pasillos
+                Generar Lista 
             </button>
         </div>
     </main>
@@ -220,7 +220,29 @@
                 </div>
             `).join('');
         }
-
+// --- 3. RENDERIZADO DE LA INTERFAZ ---
+        function renderizar() {
+            contenedor.innerHTML = estado.map(prod => `
+                <div class="flex items-center justify-between p-2.5 rounded-xl border transition-all ${prod.check ? 'border-blue-500 bg-blue-50/50' : 'border-gray-200 bg-gray-50'}">
+                    
+                    <label class="flex items-center gap-3 flex-1 cursor-pointer select-none py-1 overflow-hidden">
+                        <input type="checkbox" ${prod.check ? 'checked' : ''} 
+                               onchange="toggleCheck(${prod.id})" 
+                               class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 shrink-0">
+                        <span class="text-base font-medium truncate flex-1 ${prod.check ? 'text-blue-900 font-semibold' : 'text-gray-700'}">${prod.nombre}</span>
+                    </label>
+                    
+                    <div class="flex items-center ml-2 shrink-0">
+                        <input type="number" 
+                               inputmode="numeric"
+                               placeholder="Cant." 
+                               value="${prod.cantidad}" 
+                               oninput="cambiarCantidad(${prod.id}, this.value)"
+                               class="w-16 p-1.5 text-center text-base bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm ${prod.check ? 'opacity-100 font-bold text-blue-900' : 'opacity-40'} transition-all">
+                    </div>
+                </div>
+            `).join('');
+        }
         // --- 4. ACCIONES ---
         function toggleCheck(id) {
             const prod = estado.find(p => p.id === id);
