@@ -170,9 +170,7 @@
             { nombre: "Friegasuelos", seccion: "🧹 Limpieza y Hogar" }
         ];
         
-        // --- 2. LÓGICA DE ESTADO (Con fusión inteligente) ---
-        // Leemos lo que haya en LocalStorage, pero inyectamos la "sección" fresca de la base de datos
-        // por si en el futuro cambias un producto de pasillo en el código.
+        // --- 2. LÓGICA DE ESTADO ---
         const estadoGuardado = JSON.parse(localStorage.getItem('lista_compra_estado')) || [];
 
         let estado = productosBase.map((base, index) => {
@@ -190,27 +188,32 @@
         let toastTimeout;
 
         function guardarYRenderizar() {
+            // FIX 1: Guardamos la posición del scroll antes de actualizar
+            const posicionScroll = contenedor.scrollTop;
+            
             localStorage.setItem('lista_compra_estado', JSON.stringify(estado));
             renderizar();
+            
+            // Y la restauramos inmediatamente después
+            contenedor.scrollTop = posicionScroll; 
         }
 
         // --- 3. RENDERIZADO DE LA INTERFAZ ---
         function renderizar() {
+            // He añadido identificadores (id="") únicos a cada elemento de la fila
+            // para poder modificar sus estilos sin tener que borrar todo
             contenedor.innerHTML = estado.map(prod => `
-                <div class="flex items-center justify-between p-2.5 rounded-xl border transition-all ${prod.check ? 'border-blue-500 bg-blue-50/50' : 'border-gray-200 bg-gray-50'}">
+                <div id="fila-${prod.id}" class="flex items-center justify-between p-2.5 rounded-xl border transition-all ${prod.check ? 'border-blue-500 bg-blue-50/50' : 'border-gray-200 bg-gray-50'}">
                     
                     <label class="flex items-center gap-3 flex-1 cursor-pointer select-none py-1 overflow-hidden">
-                        <input type="checkbox" ${prod.check ? 'checked' : ''} 
+                        <input type="checkbox" id="check-${prod.id}" ${prod.check ? 'checked' : ''} 
                                onchange="toggleCheck(${prod.id})" 
                                class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 shrink-0">
-                        <div class="flex flex-col min-w-0">
-                            <span class="text-base font-medium truncate ${prod.check ? 'text-blue-900 font-semibold' : 'text-gray-700'}">${prod.nombre}</span>
-                            <span class="text-[11px] text-gray-400 font-normal tracking-wide">${prod.seccion.replace(/ \(.+\)/,'')}</span>
-                        </div>
+                        <span id="texto-${prod.id}" class="text-base font-medium truncate flex-1 ${prod.check ? 'text-blue-900 font-semibold' : 'text-gray-700'}">${prod.nombre}</span>
                     </label>
                     
                     <div class="flex items-center ml-2 shrink-0">
-                        <input type="number" 
+                        <input type="number" id="input-${prod.id}"
                                inputmode="numeric"
                                placeholder="Cant." 
                                value="${prod.cantidad}" 
@@ -220,29 +223,7 @@
                 </div>
             `).join('');
         }
-// --- 3. RENDERIZADO DE LA INTERFAZ ---
-        function renderizar() {
-            contenedor.innerHTML = estado.map(prod => `
-                <div class="flex items-center justify-between p-2.5 rounded-xl border transition-all ${prod.check ? 'border-blue-500 bg-blue-50/50' : 'border-gray-200 bg-gray-50'}">
-                    
-                    <label class="flex items-center gap-3 flex-1 cursor-pointer select-none py-1 overflow-hidden">
-                        <input type="checkbox" ${prod.check ? 'checked' : ''} 
-                               onchange="toggleCheck(${prod.id})" 
-                               class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 shrink-0">
-                        <span class="text-base font-medium truncate flex-1 ${prod.check ? 'text-blue-900 font-semibold' : 'text-gray-700'}">${prod.nombre}</span>
-                    </label>
-                    
-                    <div class="flex items-center ml-2 shrink-0">
-                        <input type="number" 
-                               inputmode="numeric"
-                               placeholder="Cant." 
-                               value="${prod.cantidad}" 
-                               oninput="cambiarCantidad(${prod.id}, this.value)"
-                               class="w-16 p-1.5 text-center text-base bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm ${prod.check ? 'opacity-100 font-bold text-blue-900' : 'opacity-40'} transition-all">
-                    </div>
-                </div>
-            `).join('');
-        }
+
         // --- 4. ACCIONES ---
         function toggleCheck(id) {
             const prod = estado.find(p => p.id === id);
@@ -253,9 +234,35 @@
         function cambiarCantidad(id, valor) {
             const prod = estado.find(p => p.id === id);
             prod.cantidad = valor;
+            
             if (valor !== "" && !prod.check) {
                 prod.check = true;
-                guardarYRenderizar(); 
+                
+                // FIX 2: Manipulación directa del DOM. Modificamos las clases CSS 
+                // del elemento en tiempo real en lugar de recargar la lista entera.
+                const checkbox = document.getElementById(`check-${id}`);
+                if (checkbox) checkbox.checked = true;
+                
+                const fila = document.getElementById(`fila-${id}`);
+                if (fila) {
+                    fila.classList.remove('border-gray-200', 'bg-gray-50');
+                    fila.classList.add('border-blue-500', 'bg-blue-50/50');
+                }
+                
+                const texto = document.getElementById(`texto-${id}`);
+                if (texto) {
+                    texto.classList.remove('text-gray-700');
+                    texto.classList.add('text-blue-900', 'font-semibold');
+                }
+
+                const inputNum = document.getElementById(`input-${id}`);
+                if (inputNum) {
+                    inputNum.classList.remove('opacity-40');
+                    inputNum.classList.add('opacity-100', 'font-bold', 'text-blue-900');
+                }
+
+                // Guardamos en memoria sin recargar el render general
+                localStorage.setItem('lista_compra_estado', JSON.stringify(estado)); 
             } else {
                 localStorage.setItem('lista_compra_estado', JSON.stringify(estado)); 
             }
@@ -291,31 +298,25 @@
                 return;
             }
 
-            // 1. Agrupamos los seleccionados por su sección
             const grupos = {};
             seleccionados.forEach(prod => {
                 if (!grupos[prod.seccion]) grupos[prod.seccion] = [];
                 grupos[prod.seccion].push(prod);
             });
 
-            // 2. Ordenamos las llaves de los grupos basándonos en nuestro array 'ordenPasillos'
             const seccionesOrdenadas = Object.keys(grupos).sort((a, b) => {
                 let indexA = ordenPasillos.indexOf(a);
                 let indexB = ordenPasillos.indexOf(b);
-                // Si metiste un producto con una sección mal escrita que no existe en el array maestro, lo tira al fondo
                 if(indexA === -1) indexA = 999; 
                 if(indexB === -1) indexB = 999;
                 return indexA - indexB;
             });
 
-            // 3. Construimos el texto formateado en Markdown para WhatsApp/Telegram
             let lineas = [];
-            
             seccionesOrdenadas.forEach(seccion => {
-                lineas.push(`\n*${seccion.toUpperCase()}*`); // Negrita en WhatsApp
-                
+                lineas.push(`\n*${seccion.toUpperCase()}*`);
                 grupos[seccion].forEach(p => {
-                    const cant = p.cantidad ? ` (x${p.cantidad})` : '';
+                    const cant = p.cantidad ? ` (quedan ${p.cantidad})` : '';
                     lineas.push(` • ${p.nombre}${cant}`);
                 });
             });
